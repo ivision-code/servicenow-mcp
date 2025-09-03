@@ -21,7 +21,7 @@ from servicenow_mcp.tools.knowledge_base import (
 from servicenow_mcp.tools.knowledge_base import (
     list_categories as list_kb_categories_tool,
 )
-from servicenow_mcp.utils.config import ServerConfig
+from servicenow_mcp.utils.config import ServerConfig, AuthType
 from servicenow_mcp.utils.tool_utils import get_tool_definitions
 
 # Set up logging
@@ -180,7 +180,33 @@ class ServiceNowMCP:
         """Implementation for the list_tools MCP endpoint."""
         tool_list: List[types.Tool] = []
         # Auth tools are always available regardless of package
-        always_available_tools = {"login_basic", "login_api_key", "login_oauth_password", "logout"}
+        always_available_tools = {
+            "login_basic",
+            "login_api_key",
+            "login_oauth_password",
+            "logout",
+            "start_oauth_pkce",
+            "oauth_status",
+            "select_session",
+        }
+
+        # If we're in OAuth PKCE mode (redirect_url present) and not yet authorized, only expose PKCE tools
+        oauth_cfg = self.config.auth.oauth if self.config.auth.type == AuthType.OAUTH else None
+        if oauth_cfg and oauth_cfg.redirect_url and not self.auth_manager.token:
+            pkce_tools = ["start_oauth_pkce", "oauth_status", "select_session"]
+            for tool_name in pkce_tools:
+                definition = self.tool_definitions.get(tool_name)
+                if not definition:
+                    continue
+                _impl_func, params_model, _ret, description, _ser = definition
+                try:
+                    schema = params_model.model_json_schema()
+                    tool_list.append(
+                        types.Tool(name=tool_name, description=description, inputSchema=schema)
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to generate schema for tool '{tool_name}': {e}")
+            return tool_list
 
         # Add the introspection tool if not 'none' package
         if self.current_package_name != "none":
@@ -250,7 +276,16 @@ class ServiceNowMCP:
         # Check if the tool exists and is enabled
         if name not in self.tool_definitions:
             raise ValueError(f"Unknown tool: {name}")
-        if name not in self.enabled_tool_names:
+        always_available = name in {
+            "login_basic",
+            "login_api_key",
+            "login_oauth_password",
+            "logout",
+            "start_oauth_pkce",
+            "oauth_status",
+            "select_session",
+        }
+        if (not always_available) and name not in self.enabled_tool_names:
             raise ValueError(
                 f"Tool '{name}' is not enabled in the current package '{self.current_package_name}'."
             )

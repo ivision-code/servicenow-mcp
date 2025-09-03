@@ -24,18 +24,22 @@ class BasicAuthConfig(BaseModel):
 
 
 class OAuthConfig(BaseModel):
-    """Configuration for OAuth authentication.
+        """Configuration for OAuth authentication.
 
-    Supports both client_credentials (username/password omitted) and password grant
-    (username/password provided). The AuthManager first attempts client_credentials
-    then falls back to password grant if user credentials are present.
-    """
+        Supports:
+            - client_credentials (username/password omitted)
+            - password grant (username/password provided)
+            - authorization code + PKCE (redirect_url provided; code exchanged via callback)
+        The AuthManager first attempts client_credentials, then password grant (if creds present),
+        or uses a previously set access token (PKCE flow).
+        """
 
-    client_id: str
-    client_secret: str
-    username: Optional[str] = None
-    password: Optional[str] = None
-    token_url: Optional[str] = None
+        client_id: str
+        client_secret: str
+        username: Optional[str] = None
+        password: Optional[str] = None
+        token_url: Optional[str] = None
+        redirect_url: Optional[str] = None  # Needed for authorization code flow
 
 
 class ApiKeyConfig(BaseModel):

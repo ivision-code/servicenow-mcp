@@ -344,6 +344,17 @@ from servicenow_mcp.tools.auth_tools import (
     logout as logout_tool,
     AuthOperationResult,
 )
+from servicenow_mcp.tools.auth_flow_tools import (
+    StartPKCEParams,
+    StartPKCEResult,
+    OAuthStatusParams,
+    OAuthStatusResult,
+    SelectSessionParams,
+    SimpleResult,
+    start_oauth_pkce as start_oauth_pkce_tool,
+    oauth_status as oauth_status_tool,
+    select_session as select_session_tool,
+)
 
 # Define a type alias for the Pydantic models or dataclasses used for params
 ParamsModel = Type[Any]  # Use Type[Any] for broader compatibility initially
@@ -398,6 +409,27 @@ def get_tool_definitions(
             LogoutParams,
             AuthOperationResult,
             "Clear all in-memory authentication credentials.",
+            "json_dict",
+        ),
+        "start_oauth_pkce": (
+            start_oauth_pkce_tool,
+            StartPKCEParams,
+            StartPKCEResult,
+            "Begin OAuth Authorization Code + PKCE flow; returns authorize URL and session_id.",
+            "json_dict",
+        ),
+        "oauth_status": (
+            oauth_status_tool,
+            OAuthStatusParams,
+            OAuthStatusResult,
+            "Check status of an OAuth PKCE authorization session.",
+            "json_dict",
+        ),
+        "select_session": (
+            select_session_tool,
+            SelectSessionParams,
+            SimpleResult,
+            "Activate an authorized OAuth PKCE session (use its access token).",
             "json_dict",
         ),
         # Incident Tools
