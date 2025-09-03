@@ -16,6 +16,7 @@ from mcp.server.sse import SseServerTransport
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.routing import Mount, Route
+from starlette.responses import PlainTextResponse
 
 from servicenow_mcp.server import ServiceNowMCP
 from servicenow_mcp.utils.config import (
@@ -29,7 +30,10 @@ from servicenow_mcp.utils.config import (
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
-    """Create a Starlette application that can serve the provided mcp server with SSE."""
+    """Create a Starlette application that can serve the provided MCP server with SSE.
+
+    Adds a lightweight health endpoint at /health returning plain text 'ok'.
+    """
     sse = SseServerTransport("/messages/")
 
     async def handle_sse(request: Request) -> None:
@@ -44,10 +48,14 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
                 mcp_server.create_initialization_options(),
             )
 
+    async def health(_: Request):  # noqa: D401
+        return PlainTextResponse("ok", status_code=200)
+
     return Starlette(
         debug=debug,
         routes=[
             Route("/sse", endpoint=handle_sse),
+            Route("/health", endpoint=health),
             Mount("/messages/", app=sse.handle_post_message),
         ],
     )
