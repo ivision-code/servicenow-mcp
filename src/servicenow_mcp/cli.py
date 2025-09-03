@@ -149,47 +149,41 @@ def create_config(args) -> ServerConfig:
 
     if auth_type == AuthType.BASIC:
         username = args.username or os.getenv("SERVICENOW_USERNAME")
-        password = args.password or os.getenv("SERVICENOW_PASSWORD")  # Get password from arg or env
-        if not username or not password:
-            raise ValueError(
-                "Username and password are required for basic authentication (--username/SERVICENOW_USERNAME, --password/SERVICENOW_PASSWORD)"
+        password = args.password or os.getenv("SERVICENOW_PASSWORD")
+        if username and password:
+            basic_cfg = BasicAuthConfig(username=username, password=password)
+            final_auth_config = AuthConfig(type=auth_type, basic=basic_cfg)
+        else:
+            logger.warning(
+                "Basic auth credentials not provided at startup; use 'login_basic' tool to authenticate."
             )
-        # Create the specific config (without instance_url)
-        basic_cfg = BasicAuthConfig(
-            username=username,
-            password=password,
-        )
-        # Create the main AuthConfig wrapper
-        final_auth_config = AuthConfig(type=auth_type, basic=basic_cfg)
+            final_auth_config = AuthConfig(type=auth_type)
 
     elif auth_type == AuthType.OAUTH:
-        # Simplified - assuming password grant for now based on previous args
         client_id = args.client_id or os.getenv("SERVICENOW_CLIENT_ID")
         client_secret = args.client_secret or os.getenv("SERVICENOW_CLIENT_SECRET")
-        username = args.username or os.getenv("SERVICENOW_USERNAME")  # Needed for password grant
-        password = args.password or os.getenv("SERVICENOW_PASSWORD")  # Needed for password grant
+        username = args.username or os.getenv("SERVICENOW_USERNAME")
+        password = args.password or os.getenv("SERVICENOW_PASSWORD")
         token_url = args.token_url or os.getenv("SERVICENOW_TOKEN_URL")
-
-        if not client_id or not client_secret or not username or not password:
-            raise ValueError(
-                "Client ID, client secret, username, and password are required for OAuth password grant"
-                " (--client-id/SERVICENOW_CLIENT_ID, etc.)"
+        if client_id and client_secret and username and password:
+            if not token_url:
+                token_url = f"{instance_url}/oauth_token.do"
+                logger.warning(
+                    f"OAuth token URL not provided, defaulting to: {token_url}"
+                )
+            oauth_cfg = OAuthConfig(
+                client_id=client_id,
+                client_secret=client_secret,
+                username=username,
+                password=password,
+                token_url=token_url,
             )
-        if not token_url:
-            # Attempt to construct default if not provided
-            token_url = f"{instance_url}/oauth_token.do"
-            logger.warning(f"OAuth token URL not provided, defaulting to: {token_url}")
-
-        # Create the specific config (without instance_url)
-        oauth_cfg = OAuthConfig(
-            client_id=client_id,
-            client_secret=client_secret,
-            username=username,
-            password=password,
-            token_url=token_url,
-        )
-        # Create the main AuthConfig wrapper
-        final_auth_config = AuthConfig(type=auth_type, oauth=oauth_cfg)
+            final_auth_config = AuthConfig(type=auth_type, oauth=oauth_cfg)
+        else:
+            logger.warning(
+                "OAuth credentials incomplete at startup; use 'login_oauth_password' tool to authenticate."
+            )
+            final_auth_config = AuthConfig(type=auth_type)
 
     elif auth_type == AuthType.API_KEY:
         api_key = args.api_key or os.getenv("SERVICENOW_API_KEY")

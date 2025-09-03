@@ -333,6 +333,17 @@ from servicenow_mcp.tools.project_tools import (
     update_project as update_project_tool,
     list_projects as list_projects_tool,
 )
+from servicenow_mcp.tools.auth_tools import (
+    LoginBasicParams,
+    LoginApiKeyParams,
+    LoginOAuthPasswordParams,
+    LogoutParams,
+    login_basic as login_basic_tool,
+    login_api_key as login_api_key_tool,
+    login_oauth_password as login_oauth_password_tool,
+    logout as logout_tool,
+    AuthOperationResult,
+)
 
 # Define a type alias for the Pydantic models or dataclasses used for params
 ParamsModel = Type[Any]  # Use Type[Any] for broader compatibility initially
@@ -360,6 +371,35 @@ def get_tool_definitions(
         Dict[str, ToolDefinition]: A dictionary mapping tool names to their definitions.
     """
     tool_definitions: Dict[str, ToolDefinition] = {
+        # Authentication / Session Management (always available)
+        "login_basic": (
+            login_basic_tool,
+            LoginBasicParams,
+            AuthOperationResult,
+            "Provide basic authentication credentials at runtime.",
+            "json_dict",
+        ),
+        "login_api_key": (
+            login_api_key_tool,
+            LoginApiKeyParams,
+            AuthOperationResult,
+            "Provide API key authentication credentials at runtime.",
+            "json_dict",
+        ),
+        "login_oauth_password": (
+            login_oauth_password_tool,
+            LoginOAuthPasswordParams,
+            AuthOperationResult,
+            "Provide OAuth password grant credentials (and fetch token).",
+            "json_dict",
+        ),
+        "logout": (
+            logout_tool,
+            LogoutParams,
+            AuthOperationResult,
+            "Clear all in-memory authentication credentials.",
+            "json_dict",
+        ),
         # Incident Tools
         "create_incident": (
             create_incident_tool,

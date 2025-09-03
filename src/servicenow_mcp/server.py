@@ -179,6 +179,8 @@ class ServiceNowMCP:
     async def _list_tools_impl(self) -> List[types.Tool]:
         """Implementation for the list_tools MCP endpoint."""
         tool_list: List[types.Tool] = []
+        # Auth tools are always available regardless of package
+        always_available_tools = {"login_basic", "login_api_key", "login_oauth_password", "logout"}
 
         # Add the introspection tool if not 'none' package
         if self.current_package_name != "none":
@@ -201,10 +203,8 @@ class ServiceNowMCP:
 
         # Iterate through defined tools and add enabled ones
         for tool_name, definition in self.tool_definitions.items():
-            if tool_name in self.enabled_tool_names:
-                _impl_func, params_model, _return_annotation, description, _serialization = (
-                    definition
-                )
+            if tool_name in always_available_tools or tool_name in self.enabled_tool_names:
+                _impl_func, params_model, _return_annotation, description, _serialization = definition
                 try:
                     schema = params_model.model_json_schema()
                     tool_list.append(

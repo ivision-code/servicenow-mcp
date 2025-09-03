@@ -24,12 +24,17 @@ class BasicAuthConfig(BaseModel):
 
 
 class OAuthConfig(BaseModel):
-    """Configuration for OAuth authentication."""
+    """Configuration for OAuth authentication.
+
+    Supports both client_credentials (username/password omitted) and password grant
+    (username/password provided). The AuthManager first attempts client_credentials
+    then falls back to password grant if user credentials are present.
+    """
 
     client_id: str
     client_secret: str
-    username: str
-    password: str
+    username: Optional[str] = None
+    password: Optional[str] = None
     token_url: Optional[str] = None
 
 

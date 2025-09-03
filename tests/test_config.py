@@ -28,6 +28,7 @@ def test_basic_auth_config():
 
 def test_oauth_config():
     """Test the OAuthConfig class."""
+    # Password grant
     config = OAuthConfig(
         client_id="client_id",
         client_secret="client_secret",
@@ -39,7 +40,12 @@ def test_oauth_config():
     assert config.username == "user"
     assert config.password == "pass"
     assert config.token_url is None
-    
+
+    # client_credentials (no username/password)
+    cc_config = OAuthConfig(client_id="cid", client_secret="csecret")
+    assert cc_config.username is None
+    assert cc_config.password is None
+
     config = OAuthConfig(
         client_id="client_id",
         client_secret="client_secret",
